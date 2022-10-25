@@ -15,6 +15,9 @@
     <AsyncLogger name="SYS" level="${log.level}">
         <AppenderRef ref="sys"/>
     </AsyncLogger>
+    <AsyncLogger name="REST" level="${log.level}">
+        <AppenderRef ref="rest"/>
+    </AsyncLogger>
     <logger name="com.topjoy.restapi.common.web" level="${log.level}">
         <appender-ref ref="application"/>
     </logger>

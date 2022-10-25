@@ -34,4 +34,13 @@
         </Policies>
         <DefaultRolloverStrategy max="${file.count}"/>
     </RollingRandomAccessFile>
+    <RollingRandomAccessFile name="rest" fileName="${log.home}/rest.log"
+                             filePattern="${log.home}/%d{yyyy-MM-dd}/rest.%d{yyyy-MM-dd}.%i.log">
+        <PatternLayout pattern="${log.pattern}"/>
+        <Policies>
+            <TimeBasedTriggeringPolicy modulate="true"/>
+            <SizeBasedTriggeringPolicy size="${file.size}"/>
+        </Policies>
+        <DefaultRolloverStrategy max="${file.count}"/>
+    </RollingRandomAccessFile>
 </Appenders>

@@ -17,3 +17,7 @@ log-file-duration: 14d
 
 server:
   port: 4567
+
+logging:
+  file:
+    path: "..../log"

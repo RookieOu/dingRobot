@@ -22,4 +22,7 @@ public class Log {
 
 
     public static final Logger SYS = LogManager.getLogger("SYS");
+
+
+    public static final Logger REST = LogManager.getLogger("REST");
 }
