@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Loggers>
+    <AsyncRoot level="${log.level.root}">
+        <AppenderRef ref="Sentry" level="WARN"/>
+        <AppenderRef ref="error"/>
+        <AppenderRef ref="console"/>
+
+    </AsyncRoot>
+
+    <!-- base loggers -->
+    <AsyncLogger name="org.apache.catalina.startup.DigesterFactory" level="ERROR"/>
+    <AsyncLogger name="org.apache.catalina.util.LifecycleBase" level="ERROR"/>
+    <AsyncLogger name="org.apache.coyote.http11.Http11NioProtocol" level="WARN"/>
+    <AsyncLogger name="org.apache.sshd.common.util.SecurityUtils" level="WARN"/>
+    <AsyncLogger name="org.apache.tomcat.util.net.NioSelectorPool" level="WARN"/>
+    <AsyncLogger name="org.eclipse.jetty.util.component.AbstractLifeCycle" level="ERROR"/>
+    <AsyncLogger name="org.hibernate.validator.internal.util.Version" level="WARN"/>
+    <AsyncLogger name="org.springframework.boot.actuate.endpoint.jmx" level="WARN"/>
+    <AsyncLogger name="org.mongodb.driver.protocol.command" level="INFO"/>
+    <AsyncLogger name="org.mongodb.driver.cluster" level="INFO"/>
+    <AsyncLogger name="org.apache.zookeeper.ClientCnxn" level="INFO"/>
+    <logger name="com.topjoy.restapi.common.web" level="${log.level}">
+        <appender-ref ref="restapi"/>
+    </logger>
+    <logger name="org.springframework.web" level="${log.level}">
+        <appender-ref ref="access"/>
+    </logger>
+
+    <!-- common loggers -->
+    <AsyncLogger name="APPLICATION" level="${log.level}">
+        <AppenderRef ref="application"/>
+    </AsyncLogger>
+    <AsyncLogger name="GM" level="${log.level}">
+        <AppenderRef ref="gm"/>
+    </AsyncLogger>
+    <AsyncLogger name="RPC" level="${log.level}">
+        <AppenderRef ref="application"/>
+    </AsyncLogger>
+    <AsyncLogger name="SYS" level="${log.level}">
+        <AppenderRef ref="sys"/>
+    </AsyncLogger>
+
+    <!-- biz loggers, appender ref is suggested to be "biz" -->
+    <AsyncLogger name="BIZ" level="${log.level}">
+        <AppenderRef ref="biz"/>
+    </AsyncLogger>
+
+</Loggers>
