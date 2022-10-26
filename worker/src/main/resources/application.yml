@@ -20,4 +20,4 @@ server:
 
 logging:
   file:
-    path: "..../log"
+    path: "./worker/log"
