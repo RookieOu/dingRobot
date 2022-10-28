@@ -16,8 +16,12 @@ log-file-count: 10
 log-file-duration: 14d
 
 server:
-  port: 4567
+  port: 12000
 
 logging:
   file:
     path: "./worker/log"
+
+ding:
+  appkey: "key"
+  appSecret: "secret"

@@ -1,6 +1,7 @@
 package com.ding.common;
 
 import com.ding.common.model.SignTypeEnum;
+import com.ding.utils.ListUtil;
 import com.ding.utils.TimeUtils;
 import com.dingtalk.api.DefaultDingTalkClient;
 import com.dingtalk.api.DingTalkClient;
@@ -26,10 +27,9 @@ public class UserService {
     public List<String> getUserList(String accessToken) throws ApiException {
         DingTalkClient client = new DefaultDingTalkClient("https://oapi.dingtalk.com/topapi/user/listid");
         OapiUserListidRequest req = new OapiUserListidRequest();
-        req.setDeptId(1L);
+        req.setDeptId(414464114L);
         OapiUserListidResponse rsp = client.execute(req, accessToken);
-        if (!Objects.equals(rsp.getErrmsg(), "0")) {
-            // todo 报错报警
+        if (rsp.getErrcode() != 0) {
             return new ArrayList<>();
         } else {
             return rsp.getResult().getUseridList();
@@ -48,23 +48,22 @@ public class UserService {
         // 查询考勤打卡记录的结束工作日
         String endTime = TimeUtils.getDateYMDHIS(TimeUtils.getGivenHourMillisFromNow(TimeUtils.getBizMillis(), 0, 19));
         requestAttendanceListRequest.setWorkDateTo(endTime);
-        // 员工在企业内的userid列表，最多不能超过50个。
-        requestAttendanceListRequest.setUserIdList(userList);
+        int groupCount = userList.size() / 10 + 1;
+        List<List<String>> group = ListUtil.averageAssign(userList, groupCount);
         // 表示获取考勤数据的起始点
         requestAttendanceListRequest.setOffset(0L);
         // 表示获取考勤数据的条数，最大不能超过50条。
-        requestAttendanceListRequest.setLimit(1L);
-        OapiAttendanceListResponse response = null;
-        try {
+        requestAttendanceListRequest.setLimit(10L);
+        List<OapiAttendanceListResponse.Recordresult> allResult = new ArrayList<>();
+        for (List<String> oneGroup : group) {
+            // 员工在企业内的userid列表，最多不能超过50个。
+            requestAttendanceListRequest.setUserIdList(oneGroup);
+            OapiAttendanceListResponse response = null;
             response = clientDingTalkClient.execute(requestAttendanceListRequest, accessToken);
-        } catch (ApiException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            allResult.addAll(response.getRecordresult());
         }
         List<String> remindList = new ArrayList<>();
-        assert response != null;
-        List<OapiAttendanceListResponse.Recordresult> recordResult = response.getRecordresult();
-        for (OapiAttendanceListResponse.Recordresult record : recordResult) {
+        for (OapiAttendanceListResponse.Recordresult record : allResult) {
             if (Objects.equals(record.getCheckType(), type.getDec())) {
                 if (Objects.equals(record.getTimeResult(), "NotSigned")) {
                     remindList.add(record.getUserId());

@@ -5,7 +5,7 @@ target/
 !**/src/test/**/target/
 /worker/log/
 !**/worker/**/log/
-/config/
+worker/config/application.yml
 *.log
 
 ### STS ###
