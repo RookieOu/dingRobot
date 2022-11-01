@@ -26,4 +26,16 @@ public class ListUtil {
         }
         return result;
     }
+
+    public static String toStringWithSeparator(List<String> users, String separator) {
+        if (users.isEmpty()) {
+            return "";
+        }
+        StringBuilder result = new StringBuilder();
+        for (String user : users) {
+            result.append(user).append(separator);
+        }
+        result.deleteCharAt(result.length() - 1);
+        return result.toString();
+    }
 }

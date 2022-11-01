@@ -7,6 +7,7 @@ target/
 !**/worker/**/log/
 worker/config/application.yml
 *.log
+*.png
 
 ### STS ###
 .apt_generated

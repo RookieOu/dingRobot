@@ -12,7 +12,7 @@ public enum SignTypeEnum {
     /**
      * 下班打卡
      */
-    OFF_DUTY("OffDuty", "上班");
+    OFF_DUTY("OffDuty", "下班");
 
     String dec;
 

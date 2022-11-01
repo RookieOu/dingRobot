@@ -23,5 +23,5 @@ logging:
     path: "./worker/log"
 
 ding:
-  appkey: "key"
-  appSecret: "secret"
+  appkey: "dingbvppzxxl22d8lrmf"
+  appSecret: "9DF9WepMvsZBfJejhWjhQ84TjfOddm2qnxL39MG8HCLSZJvIETqgp-oz8cOQvPgj"

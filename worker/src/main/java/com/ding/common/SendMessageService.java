@@ -4,6 +4,7 @@ import com.ding.common.config.TokenConfig;
 import com.ding.common.model.SignTypeEnum;
 import com.ding.log.Log;
 import com.ding.schedule.ScheduleService;
+import com.ding.utils.ListUtil;
 import com.ding.utils.TimeUtils;
 import com.dingtalk.api.DefaultDingTalkClient;
 import com.dingtalk.api.DingTalkClient;
@@ -59,7 +60,7 @@ public class SendMessageService {
             Log.APPLICATION.info("no user need to be reminded");
             return;
         }
-        String mediaId = "@lALPDgCwYPjFfWLNBDnNBDg";
+        String mediaId = "@lALPDeC27WC8zI_M2Mzq";
         DingTalkClient client = new DefaultDingTalkClient("https://oapi.dingtalk.com/topapi/message/corpconversation/asyncsend_v2");
         OapiMessageCorpconversationAsyncsendV2Request request = new OapiMessageCorpconversationAsyncsendV2Request();
         request.setAgentId(1999256841L);
@@ -76,7 +77,9 @@ public class SendMessageService {
         msg.getOa().getBody().setContent("JAP打卡机器人提醒:截止" + TimeUtils.getDateYMDHIS(TimeUtils.getBizMillis()) + ",您" + type.getTitle() + "还没打卡哦QAQ！");
         msg.getOa().getBody().setImage(mediaId);
         request.setMsg(msg);
-        request.setUseridList(genUserList(userIds));
+        String userIdString = ListUtil.toStringWithSeparator(userIds, ",");
+        request.setUseridList(userIdString);
+        Log.APPLICATION.info("send " + type.getDec() + " remind to" + userIdString);
         client.execute(request, accessToken);
     }
 
@@ -86,25 +89,13 @@ public class SendMessageService {
         send(idsList, accessToken, type);
     }
 
-    private String genUserList(List<String> users) {
-        if (users.isEmpty()) {
-            return "";
-        }
-        StringBuilder result = new StringBuilder();
-        for (String user : users) {
-            result.append(user).append(",");
-        }
-        result.deleteCharAt(result.length() - 1);
-        return result.toString();
-    }
 
-    private void uploadPng(String path) throws ApiException {
+    public void uploadPng(String path) throws ApiException {
         DingTalkClient client = new DefaultDingTalkClient("https://oapi.dingtalk.com/media/upload");
         OapiMediaUploadRequest req = new OapiMediaUploadRequest();
         req.setType("image");
         FileItem item = new FileItem(path);
         req.setMedia(item);
         OapiMediaUploadResponse rsp = client.execute(req, tokenConfig.getToken());
-        System.out.println(rsp.getBody());
     }
 }
