@@ -1,19 +1,17 @@
 package com.ding.common;
 
+import com.ding.common.config.RegulatorConfig;
+import com.ding.common.config.TokenConfig;
 import com.ding.common.model.SignTypeEnum;
+import com.ding.log.Log;
 import com.ding.utils.ListUtil;
 import com.ding.utils.TimeUtils;
 import com.dingtalk.api.DefaultDingTalkClient;
 import com.dingtalk.api.DingTalkClient;
-import com.dingtalk.api.request.OapiAttendanceGetleavestatusRequest;
-import com.dingtalk.api.request.OapiAttendanceListRequest;
-import com.dingtalk.api.request.OapiAttendanceScheduleListbyusersRequest;
-import com.dingtalk.api.request.OapiUserListidRequest;
-import com.dingtalk.api.response.OapiAttendanceGetleavestatusResponse;
-import com.dingtalk.api.response.OapiAttendanceListResponse;
-import com.dingtalk.api.response.OapiAttendanceScheduleListbyusersResponse;
-import com.dingtalk.api.response.OapiUserListidResponse;
+import com.dingtalk.api.request.*;
+import com.dingtalk.api.response.*;
 import com.taobao.api.ApiException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 
@@ -27,6 +25,12 @@ import java.util.stream.Collectors;
 @Service
 public class UserService {
 
+    @Autowired
+    TokenConfig tokenConfig;
+
+    @Autowired
+    RegulatorConfig regulatorConfig;
+
     public List<String> getUserList(String accessToken) throws ApiException {
         DingTalkClient client = new DefaultDingTalkClient("https://oapi.dingtalk.com/topapi/user/listid");
         OapiUserListidRequest req = new OapiUserListidRequest();
@@ -39,8 +43,9 @@ public class UserService {
         }
     }
 
-    public List<String> getRemindList(SignTypeEnum type, String accessToken) throws ApiException {
-        List<String> userList = getUserList(accessToken);
+    public List<String> getRemindList(SignTypeEnum type) throws ApiException {
+        String token = tokenConfig.getToken();
+        List<String> userList = getUserList(token);
         // 通过调用接口获取考勤打卡结果
         DingTalkClient clientDingTalkClient = new DefaultDingTalkClient("https://oapi.dingtalk.com/attendance/list");
         OapiAttendanceListRequest requestAttendanceListRequest = new OapiAttendanceListRequest();
@@ -59,11 +64,11 @@ public class UserService {
         Map<String, OapiAttendanceListResponse.Recordresult> allResult = new HashMap<>();
         List<String> restUsers = new ArrayList<>();
         for (List<String> oneGroup : group) {
-            restUsers.addAll(getTodayRestUsers(accessToken, ListUtil.toStringWithSeparator(oneGroup, ",")));
+            restUsers.addAll(getTodayRestUsers(ListUtil.toStringWithSeparator(oneGroup, ",")));
             // 员工在企业内的userid列表，最多不能超过50个。
             requestAttendanceListRequest.setUserIdList(oneGroup);
             OapiAttendanceListResponse response = null;
-            response = clientDingTalkClient.execute(requestAttendanceListRequest, accessToken);
+            response = clientDingTalkClient.execute(requestAttendanceListRequest, token);
             for (OapiAttendanceListResponse.Recordresult result : response.getRecordresult()) {
                 if (Objects.equals(result.getCheckType(), type.getDec())) {
                     allResult.put(result.getUserId(), result);
@@ -93,12 +98,13 @@ public class UserService {
 
     /**
      * 获取今日请假休息，或无排班的员工
-     * @param token
+     *
      * @param userIds
      * @return
      * @throws ApiException
      */
-    public Collection<String> getTodayRestUsers(String token, String userIds) throws ApiException {
+    public Collection<String> getTodayRestUsers(String userIds) throws ApiException {
+        String token = tokenConfig.getToken();
         DingTalkClient client = new DefaultDingTalkClient("https://oapi.dingtalk.com/topapi/attendance/schedule/listbyusers");
         OapiAttendanceScheduleListbyusersRequest req = new OapiAttendanceScheduleListbyusersRequest();
         req.setOpUserId("0118440567661238539");
@@ -128,5 +134,48 @@ public class UserService {
                 .filter(x -> (x.getShiftId() == 0 || holiday.contains(x.getUserid())))
                 .map(OapiAttendanceScheduleListbyusersResponse.TopScheduleVo::getUserid)
                 .collect(Collectors.toSet());
+    }
+
+    public Map<String, List<String>> getLeaderMap(List<String> users, String access_token) throws ApiException {
+        DingTalkClient client = new DefaultDingTalkClient("https://oapi.dingtalk.com/topapi/v2/user/get");
+        OapiV2UserGetRequest req = new OapiV2UserGetRequest();
+        req.setLanguage("zh_CN");
+
+        Map<String, List<String>> result = new HashMap<>(users.size());
+        for (String user : users) {
+            req.setUserid(user);
+            OapiV2UserGetResponse rsp = client.execute(req, access_token);
+            // 钉钉未配置，此段逻辑暂时不可用
+//            if (rsp == null || rsp.getResult() == null || rsp.getResult().getManagerUserid() == null) {
+//                Log.SYS.warn("get leader of user {} request error ", user);
+//                continue;
+//            }
+//            List<String> workers = result.computeIfAbsent(rsp.getResult().getManagerUserid(), key -> new ArrayList<>());
+//            workers.add(rsp.getResult().getName());
+            if (rsp == null || rsp.getResult() == null) {
+                Log.SYS.warn("get leader of user {} request error ", user);
+                continue;
+            }
+            String leader = regulatorConfig.getLeader(rsp.getResult().getName());
+            List<String> workers = result.computeIfAbsent(leader, key -> new ArrayList<>());
+            workers.add(user);
+        }
+        return result;
+    }
+
+    public List<String> getName(List<String> users, String accessToken) throws ApiException {
+        DingTalkClient client = new DefaultDingTalkClient("https://oapi.dingtalk.com/topapi/v2/user/get");
+        OapiV2UserGetRequest req = new OapiV2UserGetRequest();
+        req.setLanguage("zh_CN");
+        List<String> names = new ArrayList<>();
+        for (String user : users) {
+            req.setUserid(user);
+            OapiV2UserGetResponse rsp = client.execute(req, accessToken);
+            if (rsp == null || rsp.getResult() == null || rsp.getResult().getManagerUserid() == null) {
+                continue;
+            }
+            names.add(rsp.getResult().getName());
+        }
+        return names;
     }
 }

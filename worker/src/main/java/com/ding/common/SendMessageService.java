@@ -11,6 +11,7 @@ import com.dingtalk.api.DingTalkClient;
 import com.dingtalk.api.request.OapiMediaUploadRequest;
 import com.dingtalk.api.request.OapiMessageCorpconversationAsyncsendV2Request;
 import com.dingtalk.api.response.OapiMediaUploadResponse;
+import com.dingtalk.api.response.OapiMessageCorpconversationAsyncsendV2Response;
 import com.taobao.api.ApiException;
 import com.taobao.api.FileItem;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author yanou
@@ -38,26 +40,58 @@ public class SendMessageService {
 
     @EventListener(ApplicationStartedEvent.class)
     public void initTask() {
-        String token = tokenConfig.getToken();
         scheduleService.scheduleAtHIS(() -> {
             try {
-                send(userService.getRemindList(SignTypeEnum.ON_DUTY, token), token, SignTypeEnum.ON_DUTY);
+                send(userService.getRemindList(SignTypeEnum.ON_DUTY), SignTypeEnum.ON_DUTY);
             } catch (ApiException e) {
                 e.printStackTrace();
             }
-        }, 10, 10, 0);
+        }, 10, 30, 0);
         scheduleService.scheduleAtHIS(() -> {
             try {
-                send(userService.getRemindList(SignTypeEnum.OFF_DUTY, token), token, SignTypeEnum.OFF_DUTY);
+                send(userService.getRemindList(SignTypeEnum.OFF_DUTY), SignTypeEnum.OFF_DUTY);
             } catch (ApiException e) {
                 e.printStackTrace();
             }
         }, 20, 0, 0);
     }
 
-    public void send(List<String> userIds, String accessToken, SignTypeEnum type) throws ApiException {
+    /**
+     * @param type
+     * @throws ApiException
+     */
+    public void sendToLeader(SignTypeEnum type) throws ApiException {
+        String accessToken = tokenConfig.getToken();
+        List<String> remindList = userService.getRemindList(type);
+        Map<String, List<String>> leaderMap = userService.getLeaderMap(remindList, accessToken);
+        DingTalkClient client = new DefaultDingTalkClient("https://oapi.dingtalk.com/topapi/message/corpconversation/asyncsend_v2");
+        OapiMessageCorpconversationAsyncsendV2Request request = new OapiMessageCorpconversationAsyncsendV2Request();
+        request.setAgentId(1999256841L);
+        request.setToAllUser(false);
+        if (leaderMap.isEmpty()) {
+            Log.SYS.info("no need to remind leader");
+            return;
+        }
+        for (String leader : leaderMap.keySet()) {
+            request.setUseridList(leader);
+            OapiMessageCorpconversationAsyncsendV2Request.Msg msg = new OapiMessageCorpconversationAsyncsendV2Request.Msg();
+            msg.setMsgtype("markdown");
+            msg.setMarkdown(new OapiMessageCorpconversationAsyncsendV2Request.Markdown());
+            msg.getMarkdown().setText(" JAP打卡机器人提醒\n 截止" + TimeUtils.getDateYMDHIS(TimeUtils.getBizMillis())
+                    + " ,员工:**" + ListUtil.toStringWithSeparator(leaderMap.get(leader), ",") +
+                    "**还没完成" + type.getTitle() + "打卡,辛苦提醒及时打卡!");
+            msg.getMarkdown().setTitle("# 员工未打卡提醒");
+            request.setMsg(msg);
+            client.execute(request, accessToken);
+            Log.SYS.info("send message to leader");
+        }
+
+    }
+
+    public void send(List<String> userIds, SignTypeEnum type) throws ApiException {
+        String accessToken = tokenConfig.getToken();
         if (userIds.isEmpty()) {
-            Log.APPLICATION.info("no user need to be reminded");
+            Log.SYS.info("no user need to be reminded");
             return;
         }
         String mediaId = "@lALPDeC27WC8zI_M2Mzq";
@@ -79,23 +113,24 @@ public class SendMessageService {
         request.setMsg(msg);
         String userIdString = ListUtil.toStringWithSeparator(userIds, ",");
         request.setUseridList(userIdString);
-        Log.APPLICATION.info("send " + type.getDec() + " remind to" + userIdString);
+        Log.SYS.info("send {} remind to {}", type.getDec(), ListUtil.toStringWithSeparator(userService.getName(userIds, accessToken), ","));
         client.execute(request, accessToken);
     }
 
-    public void send(String userId, String accessToken, SignTypeEnum type) throws ApiException {
+    public void send(String userId, SignTypeEnum type) throws ApiException {
         List<String> idsList = new ArrayList<>(1);
         idsList.add(userId);
-        send(idsList, accessToken, type);
+        send(idsList, type);
     }
 
 
-    public void uploadPng(String path) throws ApiException {
+    public String uploadPng(String path) throws ApiException {
         DingTalkClient client = new DefaultDingTalkClient("https://oapi.dingtalk.com/media/upload");
         OapiMediaUploadRequest req = new OapiMediaUploadRequest();
         req.setType("image");
         FileItem item = new FileItem(path);
         req.setMedia(item);
         OapiMediaUploadResponse rsp = client.execute(req, tokenConfig.getToken());
+        return rsp.getMediaId();
     }
 }

@@ -38,11 +38,10 @@ public class ManagerController {
         if (StringUtils.isEmpty(type)) {
             return "need type";
         }
-        String token = tokenConfig.getToken();
         if (Objects.equals(type, SignTypeEnum.ON_DUTY.getDec())) {
-            sendMessageService.send(userService.getRemindList(SignTypeEnum.ON_DUTY, token), token, SignTypeEnum.ON_DUTY);
+            sendMessageService.send(userService.getRemindList(SignTypeEnum.ON_DUTY), SignTypeEnum.ON_DUTY);
         } else if (Objects.equals(type, SignTypeEnum.OFF_DUTY.getDec())) {
-            sendMessageService.send(userService.getRemindList(SignTypeEnum.OFF_DUTY, token), token, SignTypeEnum.OFF_DUTY);
+            sendMessageService.send(userService.getRemindList(SignTypeEnum.OFF_DUTY), SignTypeEnum.OFF_DUTY);
         } else {
             return "type error";
         }
@@ -56,11 +55,10 @@ public class ManagerController {
         if (StringUtils.isEmpty(type) || StringUtils.isEmpty(id)) {
             return "need type and id";
         }
-        String token = tokenConfig.getToken();
         if (Objects.equals(type, SignTypeEnum.ON_DUTY.getDec())) {
-            sendMessageService.send(id, token, SignTypeEnum.ON_DUTY);
+            sendMessageService.send(id, SignTypeEnum.ON_DUTY);
         } else if (Objects.equals(type, SignTypeEnum.OFF_DUTY.getDec())) {
-            sendMessageService.send(id, token, SignTypeEnum.OFF_DUTY);
+            sendMessageService.send(id, SignTypeEnum.OFF_DUTY);
         } else {
             return "type error";
         }
